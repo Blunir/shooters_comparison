@@ -1,0 +1,44 @@
+name: Update IPSC data
+
+on:
+  schedule:
+    # every day at 05:17 and 21:17 UTC (07:17 / 23:17 Israel time)
+    - cron: '17 5,21 * * *'
+  workflow_dispatch: {}   # "Run workflow" button in the Actions tab
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: ipsc-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Fetch new matches from endofscoring
+        run: node scripts/update-ipsc.mjs
+
+      - name: Commit and push
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- '*.json' '*.html'
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "עדכון נתוני IPSC $(TZ=Asia/Jerusalem date +%F)"
+          git push
+          # ask GitHub Pages to rebuild the site (ignored if Pages builds on its own)
+          gh api -X POST "repos/${{ github.repository }}/pages/builds" >/dev/null 2>&1 || true
