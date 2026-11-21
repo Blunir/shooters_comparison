@@ -743,7 +743,7 @@ function loadPart(i){
   if(PST[i]==='ok')return Promise.resolve();
   if(PROM[i])return PROM[i];
   PST[i]='load';renderStatus();
-  PROM[i]=fetch(BASE+PARTS[i].file).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+  PROM[i]=fetch(BASE+PARTS[i].file+'?v='+encodeURIComponent(IDX.fetched),{cache:'no-cache'}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
     .then(function(d){RAWP[i]=d;PST[i]='ok';renderStatus();})
     .catch(function(e){PST[i]='err';PROM[i]=null;renderStatus();_$('manual').style.display='block';throw e;});
   return PROM[i];
